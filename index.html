@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DetailBid — Auto Detailing Quote Calculator & Job Book</title>
+<style>
+  :root{
+    --ink:#1c242e; --muted:#5d6b7a; --brand:#14507a; --brand2:#0d3a5c;
+    --bg:#f2f5f8; --card:#ffffff; --line:#d7e0e9; --accent:#e6f0f8;
+    --warn:#9a3412; --warnbg:#fdf0e7; --bad:#b3261e; --good:#14694f;
+  }
+  html{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+  header{background:var(--brand2);color:#fff;padding:14px 16px}
+  header .wrap{max-width:1020px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  header h1{font-size:20px;margin:0}
+  header .sub{font-size:12.5px;opacity:.85;margin-top:2px}
+  nav{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+  nav .wrap{max-width:1020px;margin:0 auto;display:flex;flex-wrap:wrap;gap:2px;padding:6px 8px}
+  nav button{background:none;border:none;padding:9px 12px;font-size:14.5px;cursor:pointer;border-radius:6px;color:var(--ink)}
+  nav button.active{background:var(--accent);color:var(--brand2);font-weight:600}
+  main{max-width:1020px;margin:0 auto;padding:16px 12px 60px}
+  .view{display:none}
+  .view.active{display:block}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card .lbl{font-size:12.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .card .val{font-size:24px;font-weight:700;margin-top:4px}
+  .card .note{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+  .panel h2{margin:0 0 10px;font-size:17px}
+  .panel h3{margin:16px 0 8px;font-size:15px}
+  form.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:8px 9px;border:1px solid var(--line);border-radius:6px;font-size:14.5px;background:#fff;color:var(--ink)}
+  textarea{min-height:56px}
+  .btn{background:var(--brand);color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:14.5px;cursor:pointer}
+  .btn:hover{background:var(--brand2)}
+  .btn.ghost{background:#fff;color:var(--brand2);border:1px solid var(--brand)}
+  .btn.danger{background:#fff;color:var(--bad);border:1px solid var(--bad)}
+  .btn.small{padding:4px 9px;font-size:13px;min-height:40px;}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:12.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.total td{font-weight:700;border-top:2px solid var(--ink);border-bottom:none}
+  .msg{font-size:13.5px;margin-top:8px;min-height:18px}
+  .bad{color:var(--bad)} .good{color:var(--good)}
+  .pill{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:9px;background:var(--accent);color:var(--brand2);white-space:nowrap}
+  .pill.declined,.pill.done{background:#fbe9e7;color:var(--bad)}
+  .pill.sent{background:#fdf0e7;color:var(--warn)}
+  .pill.accepted,.pill.booked{background:#e8f3ee;color:var(--good)}
+  .muted{color:var(--muted);font-size:13px}
+  .rowflex{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .spacer{flex:1}
+  .chk{display:flex;gap:8px;align-items:flex-start;padding:7px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;background:#fff}
+  .chk input{width:auto;margin-top:3px}
+  .chk .nm{font-weight:600}
+  .chk .dt{font-size:12.5px;color:var(--muted)}
+  .chk.star{border-color:var(--warn);background:var(--warnbg)}
+  .floorbox{border:1px solid #f0c9ae;background:var(--warnbg);border-radius:8px;padding:10px 12px;margin-top:10px}
+  .okbox{border:1px solid #bfe3d2;background:#eef7f2;border-radius:8px;padding:10px 12px;margin-top:10px}
+  .bigprice{font-size:26px;font-weight:700}
+  .scrollx{overflow-x:auto}
+  #printSheet{display:none}
+  @media (max-width:640px){
+    .panel{overflow-x:auto}
+    header h1{font-size:17px}
+    .card .val{font-size:20px}
+    th,td{padding:6px 5px;font-size:13px}
+    nav button{padding:8px 9px;font-size:13.5px}
+  }
+  @media print{
+    header,nav,main{display:none !important}
+    #printSheet{display:block !important;font-size:13px;color:#000}
+    #printSheet h1{font-size:19px;margin:0 0 4px}
+    #printSheet h2{font-size:15px;margin:18px 0 6px}
+    #printSheet table{width:100%;border-collapse:collapse}
+    #printSheet th,#printSheet td{border-bottom:1px solid #bbb;padding:5px 6px;text-align:left}
+    #printSheet td.num,#printSheet th.num{text-align:right}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <h1>🚗 DetailBid</h1>
+      <div class="sub">Auto detailing quote calculator &amp; job book — price by vehicle, package &amp; condition. Offline, no subscription.</div>
+    </div>
+  </div>
+</header>
+<nav>
+  <div class="wrap" id="tabBar">
+    <button data-view="builder" class="active" type="button">Quote Builder</button>
+    <button data-view="book" type="button">Job Book</button>
+    <button data-view="follow" type="button">Follow-Up</button>
+    <button data-view="settings" type="button">Settings &amp; Backup</button>
+    <button data-view="help" type="button">Help</button>
+  </div>
+</nav>
+<main id="app">
+
+  <!-- ============ BUILDER ============ -->
+  <section class="view active" id="view-builder">
+    <div class="cards">
+      <div class="card"><div class="lbl">Quoted price</div><div class="val" id="dPrice">$0.00</div><div class="note">Itemized total — customer sees this</div></div>
+      <div class="card"><div class="lbl">Estimated time</div><div class="val" id="dHours">0.0 hrs</div><div class="note">Your time estimate for the job</div></div>
+      <div class="card"><div class="lbl">Effective rate</div><div class="val" id="dRate">$0/hr</div><div class="note">Quoted price ÷ hours — the number detailers live by</div></div>
+      <div class="card"><div class="lbl">Your profit floor</div><div class="val" id="dFloor">$0.00</div><div class="note" id="dFloorNote">Break-even + your minimum margin</div></div>
+    </div>
+    <div class="panel">
+      <h2>Client &amp; vehicle</h2>
+      <form class="grid" id="qForm">
+        <div><label for="qDate">Quote date</label><input type="date" id="qDate"></div>
+        <div><label for="qClient">Client name *</label><input type="text" id="qClient" placeholder="e.g. Sarah Miller"></div>
+        <div><label for="qPhone">Phone (optional)</label><input type="text" id="qPhone" placeholder="555-0100"></div>
+        <div><label for="qVehicle">Vehicle *</label><input type="text" id="qVehicle" placeholder="e.g. 2021 Ford Explorer"></div>
+        <div><label for="qClass">Vehicle class</label><select id="qClass"></select></div>
+        <div><label for="qMode">Pricing mode</label>
+          <select id="qMode"><option value="package">Package price</option><option value="time">Build by services (time × rate)</option></select></div>
+        <div><label for="qStatus">Status</label>
+          <select id="qStatus"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="declined">Declined</option><option value="booked">Booked</option><option value="done">Done</option></select></div>
+      </form>
+    </div>
+    <div class="panel" id="pkgPanel">
+      <h2>Package</h2>
+      <div class="rowflex" id="pkgBtns"></div>
+      <p class="muted" id="pkgScope"></p>
+    </div>
+    <div class="panel" id="svcPanel" style="display:none">
+      <h2>Services (time-based build)</h2>
+      <p class="muted">Tick the services in this job. Time is the sedan base time × your vehicle-class time factor, priced at your shop rate.</p>
+      <div id="svcList"></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Condition surcharges</h2>
+        <div id="condList"></div>
+      </div>
+      <div class="panel">
+        <h2>Add-ons</h2>
+        <div id="addonList"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Mobile service</h2>
+      <form class="grid">
+        <div><label for="qMobile">Job location</label>
+          <select id="qMobile"><option value="shop">At my shop</option><option value="mobile">Mobile — I travel</option></select></div>
+        <div><label for="qMiles">Round-trip miles (mobile)</label><input inputmode="decimal" type="number" id="qMiles" step="1" min="0" value="0"></div>
+      </form>
+      <p class="muted">Mobile fee = round-trip miles × your mobile rate per mile, never less than your minimum mobile fee (Settings).</p>
+    </div>
+    <div class="panel">
+      <h2>Price check</h2>
+      <div class="scrollx"><table><tbody id="itemBody"></tbody></table></div>
+      <div id="floorZone"></div>
+      <form class="grid" style="margin-top:12px">
+        <div><label for="qFinal">Final quoted price ($) — pre-filled, editable</label><input inputmode="decimal" type="number" id="qFinal" step="0.01" min="0"></div>
+        <div><label for="qNotes">Notes (printed on the quote)</label><input type="text" id="qNotes" placeholder="e.g. Two large dogs ride in the cargo area"></div>
+      </form>
+      <div class="rowflex" style="margin-top:10px">
+        <button class="btn" id="btnSaveQuote" type="button">Save quote</button>
+        <button class="btn ghost" id="btnNewQuote" type="button">New quote</button>
+        <span class="msg" id="saveMsg"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ JOB BOOK ============ -->
+  <section class="view" id="view-book">
+    <div class="cards">
+      <div class="card"><div class="lbl">Completed revenue</div><div class="val" id="bDoneRev">$0.00</div><div class="note">Quotes marked Done</div></div>
+      <div class="card"><div class="lbl">Booked pipeline</div><div class="val" id="bBookedRev">$0.00</div><div class="note">Accepted + Booked, not yet done</div></div>
+      <div class="card"><div class="lbl">Avg effective $/hr (done)</div><div class="val" id="bAvgRate">$0/hr</div><div class="note">What finished jobs actually paid per hour</div></div>
+      <div class="card"><div class="lbl">Quotes</div><div class="val" id="bCount">0</div><div class="note" id="bCountNote"></div></div>
+    </div>
+    <div class="panel">
+      <h2>Job book</h2>
+      <div class="scrollx"><table><thead><tr><th>Date</th><th>Client</th><th>Vehicle</th><th>Job</th><th>Status</th><th class="num">Hours</th><th class="num">$/hr</th><th class="num">Price</th><th></th></tr></thead>
+      <tbody id="bookBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ FOLLOW-UP ============ -->
+  <section class="view" id="view-follow">
+    <div class="panel">
+      <h2>Sent but unanswered — oldest first</h2>
+      <p class="muted">Quotes die quietly in text threads. Work this list top-down: a two-line check-in recovers more jobs than any discount.</p>
+      <div class="scrollx"><table><thead><tr><th>Client</th><th>Vehicle</th><th>Job</th><th class="num">Days waiting</th><th class="num">Price</th><th></th></tr></thead>
+      <tbody id="followBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" id="view-settings">
+    <div class="panel">
+      <h2>Business &amp; rates</h2>
+      <form class="grid" id="setForm">
+        <div><label for="sBiz">Business name</label><input type="text" id="sBiz"></div>
+        <div><label for="sOwner">Owner name</label><input type="text" id="sOwner"></div>
+        <div><label for="sPhone">Business phone</label><input type="text" id="sPhone"></div>
+        <div><label for="sEmail">Business email</label><input type="text" id="sEmail"></div>
+        <div><label for="sShopRate">Shop rate ($/hr, time mode)</label><input inputmode="decimal" type="number" id="sShopRate" step="1" min="0"></div>
+        <div><label for="sLaborRate">Your labor cost ($/hr)</label><input inputmode="decimal" type="number" id="sLaborRate" step="1" min="0"></div>
+        <div><label for="sSupplies">Chemicals &amp; supplies (% of labor)</label><input inputmode="decimal" type="number" id="sSupplies" step="1" min="0" max="200"></div>
+        <div><label for="sFloor">Profit floor — minimum margin (%)</label><input inputmode="decimal" type="number" id="sFloor" step="1" min="0" max="90"></div>
+        <div><label for="sMinJob">Minimum job charge ($)</label><input inputmode="decimal" type="number" id="sMinJob" step="1" min="0"></div>
+        <div><label for="sPerMile">Mobile / travel rate ($ per round-trip mile)</label><input inputmode="decimal" type="number" id="sPerMile" step="0.05" min="0"></div>
+        <div><label for="sMinMobile">Minimum mobile fee ($)</label><input inputmode="decimal" type="number" id="sMinMobile" step="1" min="0"></div>
+      </form>
+      <h3>Vehicle-class time factors (time mode)</h3>
+      <p class="muted">A sedan is 1.00. Bigger vehicles take proportionally longer — these multiply every service's base time.</p>
+      <div id="factorRows"></div>
+      <div class="rowflex" style="margin-top:10px"><button class="btn" id="btnSaveSettings" type="button">Save settings</button><span class="msg" id="setMsg"></span></div>
+    </div>
+    <div class="panel">
+      <h2>Package prices &amp; hours by vehicle class</h2>
+      <p class="muted">Each cell: price ($) and estimated hours for that package on that class of vehicle.</p>
+      <div class="scrollx" id="pkgGrid"></div>
+    </div>
+    <div class="panel">
+      <h2>Services (time mode)</h2>
+      <p class="muted">Base minutes are for a sedan; the class factor scales them.</p>
+      <div id="svcRows"></div>
+    </div>
+    <div class="panel">
+      <h2>Condition surcharges</h2>
+      <div id="condRows"></div>
+    </div>
+    <div class="panel">
+      <h2>Add-ons</h2>
+      <div id="addonRows"></div>
+    </div>
+    <div class="panel">
+      <h2>Package scope text (printed on quotes)</h2>
+      <div id="scopeRows"></div>
+      <h3>Terms (printed on quotes)</h3>
+      <textarea id="sTerms" style="min-height:90px"></textarea>
+    </div>
+    <div class="panel">
+      <h2>Backup &amp; restore</h2>
+      <p class="muted">Your data lives only in this browser on this device. Export a backup regularly — it's the only copy. Importing replaces everything currently in the app with the backup's contents.</p>
+      <div class="rowflex">
+        <button class="btn" id="btnExport" type="button">Export backup (JSON)</button>
+        <label class="btn ghost" style="cursor:pointer">Import from file<input type="file" id="importFile" accept=".json,application/json" style="display:none"></label>
+      </div>
+      <label for="importText" style="margin-top:12px">…or paste backup JSON here</label>
+      <textarea id="importText" placeholder="Paste the contents of a DetailBid backup file"></textarea>
+      <div class="rowflex" style="margin-top:8px">
+        <button class="btn ghost" id="btnImportText" type="button">Import pasted backup</button>
+        <span class="msg" id="importMsg"></span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Sample data &amp; erase</h2>
+      <div class="rowflex">
+        <button class="btn ghost" id="btnClearDemo" type="button">Clear sample data only</button>
+        <button class="btn danger" id="btnEraseAll" type="button">Erase EVERYTHING</button>
+        <span class="msg" id="dataMsg"></span>
+      </div>
+      <p class="muted">Sample quotes are marked DEMO. "Erase EVERYTHING" cannot be undone — export a backup first.</p>
+    </div>
+  <div id="legalSection"></div>
+</section>
+
+  <!-- ============ HELP ============ -->
+  <section class="view" id="view-help">
+    <div class="panel">
+      <h2>How DetailBid works</h2>
+      <h3>Two ways to price the same job</h3>
+      <p><b>Package mode</b> prices from your package table: pick the vehicle class and the package, and DetailBid uses the price and hours you set for that combination. <b>Time mode</b> builds the job service by service: each service has a sedan base time, the vehicle-class factor scales it (a large SUV at 1.45× takes 45% longer than a sedan), and the total hours are priced at your shop rate. Both modes then add the same condition surcharges, add-ons, and mobile fee — and both show you the hours and the effective $/hour, because a $400 detail that takes 9 hours ($44/hr) is a worse job than a $300 detail that takes 4 ($75/hr).</p>
+      <h3>Condition surcharges — say it before you see it</h3>
+      <p>Pet hair is the famous one: it can add an hour or more of extraction and lint-rolling to any interior. Price it as a named surcharge on the quote — with your price and your extra time — instead of eating it or springing it on the customer at pickup. Heavy soil, odor, and stain work work the same way. Surcharges are flat dollars in both pricing modes, and their extra hours count in your time estimate and your $/hr.</p>
+      <h3>The profit floor</h3>
+      <p>Every quote is costed honestly: labor (estimated hours × your labor cost rate) + chemicals &amp; supplies (your % of labor) + travel (mobile miles × your per-mile rate) = <strong>break-even</strong>. Your floor is the lowest price that still leaves your minimum margin — break-even ÷ (1 − margin) — and never less than your minimum job charge. Type a final price below the floor and DetailBid flags it and <strong>will not save the quote</strong> unless you tick the one-time override box and own the decision. Loading a saved quote to edit it resets the override, so an exception can't become a habit.</p>
+      <h3>Mobile fee</h3>
+      <p>Mobile fee = round-trip miles × your per-mile rate, with a minimum (a 4-mile trip still costs you setup and drive time). The same miles also feed the travel side of your break-even at the same rate, so a long drive raises both the price and the floor.</p>
+      <h3>Your data</h3>
+      <p>Everything is stored only in this browser (localStorage) on this device — no account, no cloud, no tracking, works fully offline. Export a backup from Settings &amp; Backup before switching devices. Clearing browser data erases the app — export first.</p>
+      <h3>Defaults to localize</h3>
+      <p>The built-in package prices, service times, surcharges, and rates are national planning defaults — a starting point, not your market. Time your next three details against the estimate, adjust the tables in Settings, and re-check after ten jobs. A calculator is only as good as its inputs; this one makes yours easy to fix.</p>
+    </div>
+  </section>
+</main>
+<div id="printSheet"></div>
+
+<script>
+"use strict";
+/* ================= DetailBid ================= */
+var KEY = "detailbid_v1";
+var CLASSES = [
+  {id:"compact", name:"Compact / coupe"},
+  {id:"sedan", name:"Sedan"},
+  {id:"midsuv", name:"Mid SUV / truck"},
+  {id:"largesuv", name:"Large SUV / truck"},
+  {id:"oversized", name:"Oversized / 3-row / dually"}
+];
+var PACKAGES = [
+  {id:"exterior", name:"Exterior Wash & Wax"},
+  {id:"interior", name:"Full Interior"},
+  {id:"full", name:"Full Detail"},
+  {id:"ceramicprep", name:"Ceramic Prep"}
+];
+var STATUSES = ["draft","sent","accepted","declined","booked","done"];
+
+function clsName(id){ for(var i=0;i<CLASSES.length;i++) if(CLASSES[i].id===id) return CLASSES[i].name; return CLASSES[1].name; }
+function pkgName(id){ for(var i=0;i<PACKAGES.length;i++) if(PACKAGES[i].id===id) return PACKAGES[i].name; return PACKAGES[2].name; }
+function clsIdx(id){ for(var i=0;i<CLASSES.length;i++) if(CLASSES[i].id===id) return i; return 1; }
+function pkgIdx(id){ for(var i=0;i<PACKAGES.length;i++) if(PACKAGES[i].id===id) return i; return 2; }
+
+function defaultServices(){
+  return [
+    {id:"wash", name:"Hand wash & dry", minutes:45},
+    {id:"wheels", name:"Wheels, tires & dressing", minutes:30},
+    {id:"clay", name:"Clay bar treatment", minutes:40},
+    {id:"wax", name:"Machine wax / sealant", minutes:60},
+    {id:"vacuum", name:"Full vacuum incl. trunk", minutes:40},
+    {id:"shampoo", name:"Carpet & upholstery shampoo", minutes:60},
+    {id:"leather", name:"Leather clean & condition", minutes:40},
+    {id:"glass", name:"Glass inside & out", minutes:20},
+    {id:"dash", name:"Dash, console & trim detail", minutes:30},
+    {id:"polish1", name:"One-step paint polish", minutes:120}
+  ];
+}
+function defaultConditions(){
+  return [
+    {id:"pethair", name:"Pet hair removal", price:75, hours:1, star:true},
+    {id:"heavysoil", name:"Heavy soil / mud", price:50, hours:0.75},
+    {id:"odor", name:"Odor treatment", price:60, hours:0.5},
+    {id:"stains", name:"Stain treatment", price:40, hours:0.5}
+  ];
+}
+function defaultAddons(){
+  return [
+    {id:"engine", name:"Engine bay detail", price:45, hours:0.5},
+    {id:"headlight", name:"Headlight restoration (pair)", price:85, hours:0.75},
+    {id:"claybar", name:"Clay bar add-on", price:55, hours:0.75},
+    {id:"extraction", name:"Seat extraction (deep)", price:65, hours:1},
+    {id:"odorbomb", name:"Odor bomb / ozone", price:45, hours:0.5},
+    {id:"ceramicspray", name:"Ceramic spray coating", price:95, hours:0.75}
+  ];
+}
+function defaultSettings(){
+  return {
+    bizName:"", ownerName:"", phone:"", email:"",
+    shopRate:65, laborRate:30, suppliesPct:8, floorMargin:30, minJob:99,
+    perMile:1.50, minMobile:25,
+    factors:[0.9, 1, 1.2, 1.45, 1.7],
+    pkgPrices:[[89,99,179,149],[99,119,199,169],[129,149,249,219],[159,189,299,269],[199,229,349,329]],
+    pkgHours:[[1.5,1.5,3,2.5],[1.5,2,3.5,3],[2,2.5,4.5,4],[2.5,3,5.5,5],[3,3.5,6.5,6]],
+    services:defaultServices(), conditions:defaultConditions(), addons:defaultAddons(),
+    scopes:{
+      exterior:"Hand wash and dry, wheels and tires cleaned and dressed, door jambs wiped, exterior glass, spray wax finish.",
+      interior:"Full vacuum including trunk, carpet and upholstery shampoo, leather cleaned and conditioned where fitted, dash/console/trim detailed, interior glass, door jambs.",
+      full:"Everything in Exterior Wash & Wax and Full Interior, plus clay bar treatment and machine wax/sealant.",
+      ceramicprep:"Full detail plus one-step paint polish and full surface decontamination, ready for a ceramic coating application (coating itself quoted separately unless listed as an add-on)."
+    },
+    terms:"Quote valid 14 days. Payment due on completion. Please remove personal items and child seats before the appointment; we are not responsible for items left in the vehicle. Final price may change if the vehicle condition differs materially from what was described — any change is agreed with you before work starts."
+  };
+}
+var _uid = 0;
+function uid(){ _uid++; return "q"+Date.now().toString(36)+_uid.toString(36)+Math.floor(Math.random()*1e6).toString(36); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, function(ch){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]; }); }
+function round2(x){ return Math.round((Number(x)||0)*100)/100; }
+function fmt(x){ var v = round2(x); var neg = v<0; var s = Math.abs(v).toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2}); return (neg?"-$":"$")+s; }
+function num(v){ var n = parseFloat(v); if(!isFinite(n)) return 0; if(n>999999999) n=999999999; if(n<-999999999) n=-999999999; return n; }
+function amt(v){ var n = num(v); return n<0?0:n; }
+function validDate(s){
+  if(typeof s!=="string") return false;
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s); if(!m) return false;
+  var y=+m[1], mo=+m[2], d=+m[3];
+  if(mo<1||mo>12||d<1||d>31) return false;
+  var dt = new Date(Date.UTC(y, mo-1, d));
+  return dt.getUTCFullYear()===y && dt.getUTCMonth()===mo-1 && dt.getUTCDate()===d;
+}
+function todayStr(){ var d=new Date(); function p(n){return (n<10?"0":"")+n;} return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function svcById(s,id){ for(var i=0;i<s.services.length;i++) if(s.services[i].id===id) return s.services[i]; return null; }
+function condById(s,id){ for(var i=0;i<s.conditions.length;i++) if(s.conditions[i].id===id) return s.conditions[i]; return null; }
+function addonById(s,id){ for(var i=0;i<s.addons.length;i++) if(s.addons[i].id===id) return s.addons[i]; return null; }
+function classFactor(s, clsId){ var i = clsIdx(clsId); var f = s.factors[i]; return (typeof f==="number" && isFinite(f) && f>0) ? f : 1; }
+
+/* ---------- pricing engine ---------- */
+function computeQuote(q, s){
+  var items = [], hours = 0, price = 0, i, it;
+  var ci = clsIdx(q.vclass), pi = pkgIdx(q.pkg);
+  if(q.mode === "time"){
+    var f = classFactor(s, q.vclass);
+    for(i=0;i<s.services.length;i++){
+      var sv = s.services[i];
+      if(q.services && q.services[sv.id]){
+        var h = sv.minutes/60*f;
+        var p = h*s.shopRate;
+        items.push({label:sv.name+" ("+Math.round(sv.minutes*f)+" min)", price:round2(p), hours:round2(h*100)/100});
+        hours += h; price += p;
+      }
+    }
+    if(items.length===0) items.push({label:"(no services selected)", price:0, hours:0});
+  } else {
+    var bp = s.pkgPrices[ci][pi], bh = s.pkgHours[ci][pi];
+    items.push({label:pkgName(q.pkg)+" — "+clsName(q.vclass), price:bp, hours:bh});
+    price += bp; hours += bh;
+  }
+  var conds = q.conditions || [];
+  for(i=0;i<conds.length;i++){
+    var cd = condById(s, conds[i]);
+    if(cd){ items.push({label:"Condition: "+cd.name, price:cd.price, hours:cd.hours}); price += cd.price; hours += cd.hours; }
+  }
+  var adds = q.addons || {};
+  for(i=0;i<s.addons.length;i++){
+    var ad = s.addons[i], qty = Math.floor(amt(adds[ad.id]));
+    if(qty>0){
+      items.push({label:"Add-on: "+ad.name+(qty>1?" × "+qty:""), price:round2(ad.price*qty), hours:round2(ad.hours*qty*100)/100});
+      price += ad.price*qty; hours += ad.hours*qty;
+    }
+  }
+  var mobileFee = 0, travelMiles = 0;
+  if(q.mobile){
+    travelMiles = amt(q.travelMiles);
+    mobileFee = Math.max(s.minMobile, travelMiles*s.perMile);
+    items.push({label:"Mobile service ("+travelMiles+" round-trip mi)", price:round2(mobileFee), hours:0});
+    price += mobileFee;
+  }
+  hours = round2(hours*100)/100; price = round2(price);
+  var labor = hours*s.laborRate;
+  var supplies = labor*(s.suppliesPct/100);
+  var travel = travelMiles*s.perMile;
+  var breakEven = round2(labor + supplies + travel);
+  var marginFrac = Math.min(90, Math.max(0, s.floorMargin))/100;
+  var floorPrice = round2(Math.max(breakEven/(1-marginFrac), s.minJob));
+  return { items:items, hours:hours, suggested:price, labor:round2(labor), supplies:round2(supplies), travel:round2(travel), breakEven:breakEven, floorPrice:floorPrice };
+}
+function marginAt(price, c){ if(!price || price<=0 || !isFinite(price)) return 0; return (price - c.breakEven)/price*100; }
+function ratePerHour(price, hours){ if(!hours || hours<=0) return 0; return price/hours; }
+
+/* ---------- sanitizers ---------- */
+function sanList(raw, kind){
+  var out = [], arr = Array.isArray(raw)?raw:[];
+  for(var i=0;i<arr.length;i++){
+    var r = arr[i]; if(!r || typeof r!=="object") continue;
+    var name = String(r.name==null?"":r.name).slice(0,80); if(!name) continue;
+    var id = String(r.id==null?"":r.id).slice(0,40) || ("x"+i);
+    if(kind==="svc") out.push({id:id, name:name, minutes:Math.min(600, amt(r.minutes))});
+    else out.push({id:id, name:name, price:Math.min(100000, amt(r.price)), hours:Math.min(40, amt(r.hours)), star:!!r.star});
+  }
+  return out;
+}
+function sanitizeSettings(raw){
+  var d = defaultSettings(); if(!raw || typeof raw!=="object") return d;
+  var s = {};
+  s.bizName = String(raw.bizName==null?"":raw.bizName).slice(0,120);
+  s.ownerName = String(raw.ownerName==null?"":raw.ownerName).slice(0,120);
+  s.phone = String(raw.phone==null?"":raw.phone).slice(0,60);
+  s.email = String(raw.email==null?"":raw.email).slice(0,120);
+  s.shopRate = Math.min(1000, amt(raw.shopRate==null?d.shopRate:raw.shopRate));
+  s.laborRate = Math.min(1000, amt(raw.laborRate==null?d.laborRate:raw.laborRate));
+  s.suppliesPct = Math.min(200, amt(raw.suppliesPct==null?d.suppliesPct:raw.suppliesPct));
+  s.floorMargin = Math.min(90, amt(raw.floorMargin==null?d.floorMargin:raw.floorMargin));
+  s.minJob = Math.min(100000, amt(raw.minJob==null?d.minJob:raw.minJob));
+  s.perMile = Math.min(100, amt(raw.perMile==null?d.perMile:raw.perMile));
+  s.minMobile = Math.min(10000, amt(raw.minMobile==null?d.minMobile:raw.minMobile));
+  s.factors = d.factors.slice();
+  if(Array.isArray(raw.factors)) for(var i=0;i<5;i++){ var f = parseFloat(raw.factors[i]); if(isFinite(f) && f>0 && f<=20) s.factors[i]=f; }
+  function grid(rawG, defG, max){
+    var g = defG.map(function(r){ return r.slice(); });
+    if(Array.isArray(rawG)) for(var r2=0;r2<5;r2++){ if(Array.isArray(rawG[r2])) for(var c2=0;c2<4;c2++){ var v = amt(rawG[r2][c2]); if(v<=max) g[r2][c2]=v; } }
+    return g;
+  }
+  s.pkgPrices = grid(raw.pkgPrices, d.pkgPrices, 100000);
+  s.pkgHours = grid(raw.pkgHours, d.pkgHours, 40);
+  s.services = sanList(raw.services, "svc"); if(!s.services.length) s.services = d.services;
+  s.conditions = sanList(raw.conditions, "cond"); if(!s.conditions.length) s.conditions = d.conditions;
+  s.addons = sanList(raw.addons, "addon"); if(!s.addons.length) s.addons = d.addons;
+  s.scopes = {};
+  for(var p=0;p<PACKAGES.length;p++){ var pid = PACKAGES[p].id; s.scopes[pid] = String(raw.scopes && raw.scopes[pid]!=null ? raw.scopes[pid] : d.scopes[pid]).slice(0,1200); }
+  s.terms = String(raw.terms==null?d.terms:raw.terms).slice(0,2000);
+  return s;
+}
+function sanitizeQuote(raw, s){
+  if(!raw || typeof raw!=="object") return null;
+  if(!validDate(raw.date)) return null;
+  var client = String(raw.client==null?"":raw.client).slice(0,120);
+  if(!client) return null;
+  var q = {};
+  q.id = String(raw.id==null?"":raw.id).slice(0,60) || uid();
+  q.date = raw.date;
+  q.client = client;
+  q.phone = String(raw.phone==null?"":raw.phone).slice(0,60);
+  q.vehicle = String(raw.vehicle==null?"":raw.vehicle).slice(0,120);
+  q.vclass = clsIdx(raw.vclass)===1 && CLASSES[1].id!==raw.vclass ? "sedan" : (CLASSES.some(function(c){return c.id===raw.vclass;}) ? raw.vclass : "sedan");
+  q.mode = raw.mode==="time" ? "time" : "package";
+  q.pkg = PACKAGES.some(function(p){return p.id===raw.pkg;}) ? raw.pkg : "full";
+  q.services = {};
+  if(raw.services && typeof raw.services==="object") for(var i=0;i<s.services.length;i++){ if(raw.services[s.services[i].id]) q.services[s.services[i].id]=true; }
+  q.conditions = [];
+  if(Array.isArray(raw.conditions)) for(var j=0;j<raw.conditions.length;j++){ if(condById(s, raw.conditions[j]) && q.conditions.indexOf(raw.conditions[j])<0) q.conditions.push(raw.conditions[j]); }
+  q.addons = {};
+  if(raw.addons && typeof raw.addons==="object") for(var k=0;k<s.addons.length;k++){ var av = Math.floor(amt(raw.addons[s.addons[k].id])); if(av>0) q.addons[s.addons[k].id]=Math.min(20, av); }
+  q.mobile = !!raw.mobile;
+  q.travelMiles = Math.min(100000, amt(raw.travelMiles));
+  q.finalPrice = Math.min(999999999, amt(raw.finalPrice));
+  q.floorOverride = !!raw.floorOverride;
+  q.status = STATUSES.indexOf(raw.status)>=0 ? raw.status : "draft";
+  q.notes = String(raw.notes==null?"":raw.notes).slice(0,500);
+  var cr = parseFloat(raw.created); q.created = (isFinite(cr) && cr>0) ? cr : Date.now();
+  q.demo = !!raw.demo;
+  return q;
+}
+function sanitizeState(raw){
+  if(!raw || typeof raw!=="object") return null;
+  var s = sanitizeSettings(raw.settings);
+  var quotes = [];
+  if(Array.isArray(raw.quotes)) for(var i=0;i<raw.quotes.length;i++){ var q = sanitizeQuote(raw.quotes[i], s); if(q) quotes.push(q); }
+  return { settings:s, quotes:quotes, meta:{ seeded:!!(raw.meta&&raw.meta.seeded), demoCleared:!!(raw.meta&&raw.meta.demoCleared) }, legal: sanitizeLegal(raw.legal) };
+}
+function blankState(){ return { settings: defaultSettings(), quotes: [], meta:{ seeded:true, demoCleared:false } }; }
+function demoQuotes(s){
+  function mk(o){ var c = computeQuote(o, s); o.finalPrice = c.suggested; return o; }
+  var now = Date.now(), day = 86400000;
+  return [
+    mk({ id:uid(), date:todayStr(), client:"Demo — Sarah M.", phone:"555-0142", vehicle:"2022 Toyota Highlander", vclass:"largesuv", mode:"package", pkg:"full", services:{}, conditions:["pethair"], addons:{extraction:1}, mobile:true, travelMiles:18, finalPrice:0, floorOverride:false, status:"booked", notes:"Two large dogs ride in the cargo area.", created:now-2*day, demo:true }),
+    mk({ id:uid(), date:todayStr(), client:"Demo — James T.", phone:"555-0117", vehicle:"2019 Honda Accord", vclass:"sedan", mode:"time", pkg:"full", services:{wash:true, clay:true, wax:true}, conditions:[], addons:{headlight:1}, mobile:false, travelMiles:0, finalPrice:0, floorOverride:false, status:"sent", notes:"", created:now-9*day, demo:true }),
+    mk({ id:uid(), date:todayStr(), client:"Demo — Priya K.", phone:"", vehicle:"2020 Mazda3", vclass:"compact", mode:"package", pkg:"interior", services:{}, conditions:[], addons:{}, mobile:false, travelMiles:0, finalPrice:0, floorOverride:false, status:"done", notes:"", created:now-21*day, demo:true }),
+    mk({ id:uid(), date:todayStr(), client:"Demo — Marcus D.", phone:"555-0199", vehicle:"2021 Jeep Grand Cherokee", vclass:"midsuv", mode:"package", pkg:"full", services:{}, conditions:[], addons:{ceramicspray:1}, mobile:false, travelMiles:0, finalPrice:0, floorOverride:false, status:"accepted", notes:"", created:now-5*day, demo:true })
+  ];
+}
+function seedDemo(){
+  var st = blankState();
+  st.settings.bizName = "Shine Mobile Detailing (Demo)";
+  st.settings.ownerName = "Demo Detailer";
+  st.quotes = demoQuotes(st.settings);
+  return st;
+}
+
+/* ---------- state ---------- */
+var state = null;
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  var raw = null;
+  try{ raw = localStorage.getItem(KEY); }catch(e){}
+  if(!raw){ state = seedDemo(); save(); return; }
+  try{
+    var parsed = JSON.parse(raw);
+    state = sanitizeState(parsed);
+    if(!state) throw new Error("bad shape");
+  }catch(e){
+    try{ localStorage.setItem(KEY+".corrupt", raw); }catch(e2){}
+    state = seedDemo(); save();
+  }
+}
+function $(id){ return document.getElementById(id); }
+function setMsg(id, text, ok){ var el=$(id); if(!el) return; el.textContent = text||""; el.style.color = text ? (ok ? "#14694f" : "#b3261e") : ""; }
+
+/* ---------- builder ---------- */
+var editingId = null;
+var floorOverrideChecked = false;
+var curPkg = "full";
+function showView(name){
+  var btns = document.querySelectorAll("#tabBar button");
+  for(var i=0;i<btns.length;i++) btns[i].classList.toggle("active", btns[i].getAttribute("data-view")===name);
+  var views = document.querySelectorAll(".view");
+  for(var j=0;j<views.length;j++) views[j].classList.toggle("active", views[j].id==="view-"+name);
+}
+function buildChecklist(containerId, list, kind, selected){
+  var el = $(containerId); if(!el) return;
+  el.innerHTML = list.map(function(it){
+    var checked = kind==="svc" ? (selected && selected[it.id]) : (kind==="cond" ? (selected && selected.indexOf(it.id)>=0) : (selected && selected[it.id]>0));
+    var dt = kind==="svc" ? (it.minutes+" min (sedan)") : (fmt(it.price)+" · +"+it.hours+" hr");
+    var qty = kind==="addon" ? ' <input inputmode="decimal" type="number" min="0" max="20" step="1" value="'+(selected&&selected[it.id]?selected[it.id]:0)+'" data-qty="'+it.id+'" style="width:64px;display:inline-block">' : "";
+    return '<div class="chk'+(it.star?" star":"")+'"><input type="checkbox" data-'+kind+'="'+it.id+'"'+(checked?" checked":"")+'><div><span class="nm">'+esc(it.name)+(it.star?" ⭐":"")+'</span><br><span class="dt">'+dt+'</span>'+qty+'</div></div>';
+  }).join("");
+}
+function fillBuilder(){
+  var s = state.settings;
+  $("qClass").innerHTML = CLASSES.map(function(c){ return '<option value="'+c.id+'">'+esc(c.name)+'</option>'; }).join("");
+  $("qClass").value = "sedan";
+  $("pkgBtns").innerHTML = PACKAGES.map(function(p){ return '<button type="button" class="btn'+(p.id===curPkg?"":" ghost")+'" data-pkg="'+p.id+'">'+esc(p.name)+'</button>'; }).join("");
+  buildChecklist("svcList", s.services, "svc", {});
+  buildChecklist("condList", s.conditions, "cond", []);
+  buildChecklist("addonList", s.addons, "addon", {});
+}
+function readForm(){
+  var s = state.settings;
+  var services = {};
+  var svcs = document.querySelectorAll("[data-svc]");
+  for(var i=0;i<svcs.length;i++) if(svcs[i].checked) services[svcs[i].getAttribute("data-svc")] = true;
+  var conds = [];
+  var cbs = document.querySelectorAll("[data-cond]");
+  for(var j=0;j<cbs.length;j++) if(cbs[j].checked) conds.push(cbs[j].getAttribute("data-cond"));
+  var addons = {};
+  var acbs = document.querySelectorAll("[data-addon]");
+  for(var k=0;k<acbs.length;k++) if(acbs[k].checked){
+    var qtyEl = document.querySelector('[data-qty="'+acbs[k].getAttribute("data-addon")+'"]');
+    var qty = qtyEl ? Math.floor(amt(qtyEl.value)) : 1;
+    addons[acbs[k].getAttribute("data-addon")] = Math.max(1, Math.min(20, qty||1));
+  }
+  return {
+    id: editingId || uid(),
+    date: $("qDate").value, client: $("qClient").value.replace(/^\s+|\s+$/g,""),
+    phone: $("qPhone").value, vehicle: $("qVehicle").value,
+    vclass: $("qClass").value, mode: $("qMode").value, pkg: curPkg,
+    services: services, conditions: conds, addons: addons,
+    mobile: $("qMobile").value==="mobile", travelMiles: amt($("qMiles").value),
+    finalPrice: amt($("qFinal").value), floorOverride:false,
+    status: $("qStatus").value, notes: $("qNotes").value,
+    created: Date.now(), demo:false
+  };
+}
+function recalc(live){
+  var s = state.settings;
+  var q = readForm();
+  var c = computeQuote(q, s);
+  var fin = live ? amt($("qFinal").value) : c.suggested;
+  if(!live) $("qFinal").value = c.suggested.toFixed(2);
+  $("dPrice").textContent = fmt(c.suggested);
+  $("dHours").textContent = c.hours.toFixed(1)+" hrs";
+  $("dRate").textContent = "$"+Math.round(ratePerHour(fin, c.hours))+"/hr";
+  $("dFloor").textContent = fmt(c.floorPrice);
+  $("dFloorNote").textContent = "Break-even "+fmt(c.breakEven)+" (labor "+fmt(c.labor)+" + supplies "+fmt(c.supplies)+" + travel "+fmt(c.travel)+")";
+  $("itemBody").innerHTML = c.items.map(function(it){
+    return "<tr><td>"+esc(it.label)+"</td><td class=\"num\">"+(it.hours?it.hours.toFixed(2)+" hr":"")+"</td><td class=\"num\">"+fmt(it.price)+"</td></tr>";
+  }).join("") + '<tr class="total"><td>Total</td><td class="num">'+c.hours.toFixed(2)+' hr</td><td class="num">'+fmt(c.suggested)+'</td></tr>'
+    + "<tr><td>At your final price: margin "+marginAt(fin, c).toFixed(1)+"% · effective "+fmt(ratePerHour(fin, c.hours))+"/hr</td><td></td><td class=\"num\">"+fmt(fin)+"</td></tr>";
+  $("pkgScope").textContent = state.settings.scopes[curPkg] || "";
+  $("pkgPanel").style.display = q.mode==="time" ? "none" : "";
+  $("svcPanel").style.display = q.mode==="time" ? "" : "none";
+  var zone = $("floorZone");
+  if(fin < c.floorPrice){
+    zone.innerHTML = '<div class="floorbox"><strong class="bad">⚠ BELOW YOUR PROFIT FLOOR.</strong> At '+fmt(fin)+' your margin is '+marginAt(fin, c).toFixed(1)+'% — the floor for this job is '+fmt(c.floorPrice)+'. Raise the price, or override consciously: <label style="display:inline;color:var(--ink)"><input type="checkbox" id="floorOverride" style="width:auto"'+(floorOverrideChecked?" checked":"")+'> I am knowingly quoting below my floor</label></div>';
+    var ov = $("floorOverride");
+    if(ov) ov.addEventListener("change", function(){ floorOverrideChecked = ov.checked; });
+  } else {
+    zone.innerHTML = '<div class="okbox"><strong class="good">✓ Above your profit floor</strong> ('+fmt(c.floorPrice)+'). Margin at this price: '+marginAt(fin, c).toFixed(1)+'%.</div>';
+    floorOverrideChecked = false;
+  }
+  return { q:q, c:c, fin:fin };
+}
+function saveQuote(){
+  var r = recalc(true);
+  var msg = $("saveMsg");
+  if(!validDate(r.q.date)){ msg.innerHTML = '<span class="bad">Pick a valid date.</span>'; return; }
+  if(!r.q.client){ msg.innerHTML = '<span class="bad">Enter the client name.</span>'; return; }
+  if(!r.q.vehicle){ msg.innerHTML = '<span class="bad">Enter the vehicle.</span>'; return; }
+  var isOverride = r.fin < r.c.floorPrice && floorOverrideChecked;
+  if(r.fin < r.c.floorPrice && !isOverride){
+    msg.innerHTML = '<span class="bad">Blocked by your profit floor — raise the price to at least '+fmt(r.c.floorPrice)+' or tick the override box.</span>'; return;
+  }
+  r.q.finalPrice = round2(r.fin);
+  r.q.floorOverride = !!isOverride;
+  var sq = sanitizeQuote(r.q, state.settings);
+  if(!sq){ msg.innerHTML = '<span class="bad">Could not save — check the form.</span>'; return; }
+  if(editingId){
+    for(var i=0;i<state.quotes.length;i++) if(state.quotes[i].id===editingId){ sq.created = state.quotes[i].created; sq.demo = state.quotes[i].demo; state.quotes[i] = sq; }
+  } else {
+    state.quotes.push(sq);
+  }
+  save(); renderBook(); renderFollow();
+  msg.innerHTML = '<span class="good">Quote saved'+(sq.floorOverride?" (below floor — override recorded)":"")+'.</span>';
+}
+function resetQuote(){
+  editingId = null; floorOverrideChecked = false; curPkg = "full";
+  $("qDate").value = todayStr(); $("qClient").value = ""; $("qPhone").value = ""; $("qVehicle").value = "";
+  $("qClass").value = "sedan"; $("qMode").value = "package"; $("qStatus").value = "draft";
+  $("qMobile").value = "shop"; $("qMiles").value = 0; $("qNotes").value = ""; $("qFinal").value = "";
+  var s = state.settings;
+  $("pkgBtns").innerHTML = PACKAGES.map(function(p){ return '<button type="button" class="btn'+(p.id===curPkg?"":" ghost")+'" data-pkg="'+p.id+'">'+esc(p.name)+'</button>'; }).join("");
+  buildChecklist("svcList", s.services, "svc", {});
+  buildChecklist("condList", s.conditions, "cond", []);
+  buildChecklist("addonList", s.addons, "addon", {});
+  setMsg("saveMsg", "");
+  recalc(false);
+}
+function loadEdit(q){
+  editingId = q.id; floorOverrideChecked = false; curPkg = q.pkg;
+  $("qDate").value = q.date; $("qClient").value = q.client; $("qPhone").value = q.phone; $("qVehicle").value = q.vehicle;
+  $("qClass").value = q.vclass; $("qMode").value = q.mode; $("qStatus").value = q.status;
+  $("qMobile").value = q.mobile ? "mobile" : "shop"; $("qMiles").value = q.travelMiles; $("qNotes").value = q.notes;
+  var s = state.settings;
+  $("pkgBtns").innerHTML = PACKAGES.map(function(p){ return '<button type="button" class="btn'+(p.id===curPkg?"":" ghost")+'" data-pkg="'+p.id+'">'+esc(p.name)+'</button>'; }).join("");
+  buildChecklist("svcList", s.services, "svc", q.services);
+  buildChecklist("condList", s.conditions, "cond", q.conditions);
+  buildChecklist("addonList", s.addons, "addon", q.addons);
+  $("qFinal").value = q.finalPrice.toFixed(2);
+  recalc(true);
+  $("saveMsg").innerHTML = '<span class="good">Editing saved quote</span> — the floor override (if any) must be re-ticked; Save updates this quote.';
+  showView("builder");
+  window.scrollTo(0,0);
+}
+function jobLabel(q, s){
+  if(q.mode==="time"){
+    var n = 0; for(var k in q.services) if(q.services[k]) n++;
+    return "Custom detail ("+n+" services)";
+  }
+  return pkgName(q.pkg);
+}
+function ageDays(q){ var ts = parseFloat(q.created); if(!isFinite(ts) || ts<=0) ts = Date.now(); return Math.max(0, Math.floor((Date.now()-ts)/86400000)); }
+function statusPill(st){ return '<span class="pill '+st+'">'+st.toUpperCase()+"</span>"; }
+function renderBook(){
+  var s = state.settings;
+  var qs = state.quotes.slice().sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+  var doneRev = 0, bookedRev = 0, doneHours = 0, doneCount = 0;
+  state.quotes.forEach(function(q){
+    var c = computeQuote(q, s);
+    if(q.status==="done"){ doneRev += q.finalPrice; doneHours += c.hours; doneCount++; }
+    if(q.status==="accepted" || q.status==="booked") bookedRev += q.finalPrice;
+  });
+  $("bDoneRev").textContent = fmt(doneRev);
+  $("bBookedRev").textContent = fmt(bookedRev);
+  $("bAvgRate").textContent = doneHours>0 ? "$"+Math.round(doneRev/doneHours)+"/hr" : "$0/hr";
+  $("bCount").textContent = state.quotes.length;
+  $("bCountNote").textContent = doneCount+" done · "+state.quotes.filter(function(q){return q.status==="sent";}).length+" awaiting reply";
+  $("bookBody").innerHTML = qs.length ? qs.map(function(q){
+    var c = computeQuote(q, s);
+    return "<tr><td>"+esc(q.date)+"</td><td>"+esc(q.client)+(q.demo?' <span class="pill">DEMO</span>':"")+(q.floorOverride?' <span class="pill declined">BELOW FLOOR</span>':"")+"</td><td>"+esc(q.vehicle)+"</td><td>"+esc(jobLabel(q, s))+"</td><td>"+statusPill(q.status)+"</td><td class=\"num\">"+c.hours.toFixed(1)+"</td><td class=\"num\">$"+Math.round(ratePerHour(q.finalPrice, c.hours))+"</td><td class=\"num\">"+fmt(q.finalPrice)+"</td>"
+      + '<td><button class="btn small ghost" data-print="'+q.id+'" type="button">Print</button> <button class="btn small ghost" data-edit="'+q.id+'" type="button">Edit</button> <button class="btn small danger" data-del="'+q.id+'" type="button">Delete</button></td></tr>';
+  }).join("") : '<tr><td colspan="9" class="muted">No quotes yet — build the first one in the Quote Builder.</td></tr>';
+}
+function renderFollow(){
+  var s = state.settings;
+  var sent = state.quotes.filter(function(q){ return q.status==="sent"; }).sort(function(a,b){ return a.created-b.created; });
+  $("followBody").innerHTML = sent.length ? sent.map(function(q){
+    return "<tr><td>"+esc(q.client)+(q.demo?' <span class="pill">DEMO</span>':"")+"</td><td>"+esc(q.vehicle)+"</td><td>"+esc(jobLabel(q, s))+"</td><td class=\"num\">"+ageDays(q)+"</td><td class=\"num\">"+fmt(q.finalPrice)+"</td>"
+      + '<td><button class="btn small ghost" data-edit="'+q.id+'" type="button">Open</button></td></tr>';
+  }).join("") : '<tr><td colspan="6" class="muted">Nothing waiting on a reply. 🎉</td></tr>';
+}
+function buildPrint(q){
+  var s = state.settings;
+  var c = computeQuote(q, s);
+  var rows = c.items.map(function(it){
+    return "<tr><td>"+esc(it.label)+"</td><td class=\"num\">"+fmt(it.price)+"</td></tr>";
+  }).join("");
+  $("printSheet").innerHTML = "<h1>"+esc(s.bizName||"Detailing Quote")+"</h1>"
+    + "<p>"+esc(s.ownerName||"")+(s.phone?" · "+esc(s.phone):"")+(s.email?" · "+esc(s.email):"")+"</p>"
+    + "<h2>Detailing quote — "+esc(q.date)+"</h2>"
+    + "<p>Client: <b>"+esc(q.client)+"</b>"+(q.phone?" · "+esc(q.phone):"")+"<br>Vehicle: <b>"+esc(q.vehicle)+"</b> ("+esc(clsName(q.vclass))+")"+(q.mobile?" · Mobile service at your location":" · At our shop")+"</p>"
+    + "<h2>What's included</h2><p>"+esc(q.mode==="time" ? "Custom service package as itemized below." : (s.scopes[q.pkg]||""))+"</p>"
+    + '<table><thead><tr><th>Item</th><th class="num">Price</th></tr></thead><tbody>'+rows+"</tbody>"
+    + '<tfoot><tr class="total"><td>Total</td><td class="num">'+fmt(q.finalPrice)+"</td></tr></tfoot></table>"
+    + "<p>Estimated time on the vehicle: about "+c.hours.toFixed(1)+" hours.</p>"
+    + (q.notes ? "<p>Notes: "+esc(q.notes)+"</p>" : "")
+    + "<h2>Terms</h2><p>"+esc(s.terms)+"</p>"
+    + '<p style="margin-top:28px">Accepted: ______________________________ &nbsp; Date: ____________</p>';
+  window.print();
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  var s = state.settings;
+  if(document.activeElement && ["sBiz","sOwner","sPhone","sEmail","sTerms"].indexOf(document.activeElement.id)>=0) return;
+  $("sBiz").value = s.bizName; $("sOwner").value = s.ownerName; $("sPhone").value = s.phone; $("sEmail").value = s.email;
+  $("sShopRate").value = s.shopRate; $("sLaborRate").value = s.laborRate; $("sSupplies").value = s.suppliesPct;
+  $("sFloor").value = s.floorMargin; $("sMinJob").value = s.minJob; $("sPerMile").value = s.perMile; $("sMinMobile").value = s.minMobile;
+  $("factorRows").innerHTML = CLASSES.map(function(c, i){
+    return '<div class="rowflex" style="margin-bottom:6px"><label style="margin:0;min-width:170px">'+esc(c.name)+'</label><input inputmode="decimal" type="number" step="0.05" min="0.1" max="20" data-factor="'+i+'" value="'+s.factors[i]+'" style="max-width:120px"></div>';
+  }).join("");
+  var head = "<tr><th>Package</th>"+CLASSES.map(function(c){ return "<th>"+esc(c.name)+"</th>"; }).join("")+"</tr>";
+  var body = PACKAGES.map(function(p, pi){
+    var cells = CLASSES.map(function(c, ci){
+      return '<td>$<input inputmode="decimal" type="number" step="1" min="0" data-pp="'+ci+'-'+pi+'" value="'+s.pkgPrices[ci][pi]+'" style="width:76px;display:inline-block"> · <input inputmode="decimal" type="number" step="0.25" min="0" data-ph="'+ci+'-'+pi+'" value="'+s.pkgHours[ci][pi]+'" style="width:60px;display:inline-block"> hr</td>';
+    }).join("");
+    return "<tr><td><b>"+esc(p.name)+"</b></td>"+cells+"</tr>";
+  }).join("");
+  $("pkgGrid").innerHTML = "<table><thead>"+head+"</thead><tbody>"+body+"</tbody></table>";
+  $("svcRows").innerHTML = s.services.map(function(sv, i){
+    return '<div class="rowflex" style="margin-bottom:6px"><input type="text" data-svc-name="'+i+'" value="'+esc(sv.name)+'" style="flex:2;min-width:170px"><span>base minutes</span><input inputmode="decimal" type="number" step="1" min="0" max="600" data-svc-min="'+i+'" value="'+sv.minutes+'" style="max-width:100px"></div>';
+  }).join("");
+  function priceRows(list, kind){
+    return list.map(function(it, i){
+      return '<div class="rowflex" style="margin-bottom:6px"><input type="text" data-'+kind+'-name="'+i+'" value="'+esc(it.name)+'" style="flex:2;min-width:170px"><span>$</span><input inputmode="decimal" type="number" step="1" min="0" data-'+kind+'-price="'+i+'" value="'+it.price+'" style="max-width:90px"><span>+ hrs</span><input inputmode="decimal" type="number" step="0.25" min="0" max="40" data-'+kind+'-hours="'+i+'" value="'+it.hours+'" style="max-width:80px"></div>';
+    }).join("");
+  }
+  $("condRows").innerHTML = priceRows(s.conditions, "cond");
+  $("addonRows").innerHTML = priceRows(s.addons, "addon");
+  $("scopeRows").innerHTML = PACKAGES.map(function(p){
+    return '<label>'+esc(p.name)+'</label><textarea data-scope="'+p.id+'">'+esc(s.scopes[p.id])+"</textarea>";
+  }).join("");
+  $("sTerms").value = s.terms;
+}
+function saveSettings(){
+  var s = state.settings;
+  var raw = JSON.parse(JSON.stringify(s));
+  raw.bizName = $("sBiz").value; raw.ownerName = $("sOwner").value; raw.phone = $("sPhone").value; raw.email = $("sEmail").value;
+  raw.shopRate = $("sShopRate").value; raw.laborRate = $("sLaborRate").value; raw.suppliesPct = $("sSupplies").value;
+  raw.floorMargin = $("sFloor").value; raw.minJob = $("sMinJob").value; raw.perMile = $("sPerMile").value; raw.minMobile = $("sMinMobile").value;
+  var fs = document.querySelectorAll("[data-factor]");
+  for(var i=0;i<fs.length;i++) raw.factors[+fs[i].getAttribute("data-factor")] = fs[i].value;
+  var pp = document.querySelectorAll("[data-pp]");
+  for(var j=0;j<pp.length;j++){ var parts = pp[j].getAttribute("data-pp").split("-"); raw.pkgPrices[+parts[0]][+parts[1]] = pp[j].value; }
+  var ph = document.querySelectorAll("[data-ph]");
+  for(var k=0;k<ph.length;k++){ var p2 = ph[k].getAttribute("data-ph").split("-"); raw.pkgHours[+p2[0]][+p2[1]] = ph[k].value; }
+  function readList(kind, list, isSvc){
+    return list.map(function(it, idx){
+      var nm = document.querySelector('[data-'+kind+'-name="'+idx+'"]');
+      var o = { id: it.id, name: nm ? nm.value : it.name, star: !!it.star };
+      if(isSvc){ var mn = document.querySelector('[data-'+kind+'-min="'+idx+'"]'); o.minutes = mn ? mn.value : it.minutes; }
+      else {
+        var pr = document.querySelector('[data-'+kind+'-price="'+idx+'"]'); o.price = pr ? pr.value : it.price;
+        var hr = document.querySelector('[data-'+kind+'-hours="'+idx+'"]'); o.hours = hr ? hr.value : it.hours;
+      }
+      return o;
+    });
+  }
+  raw.services = readList("svc", s.services, true);
+  raw.conditions = readList("cond", s.conditions, false);
+  raw.addons = readList("addon", s.addons, false);
+  var sc = document.querySelectorAll("[data-scope]");
+  for(var m=0;m<sc.length;m++) raw.scopes[sc[m].getAttribute("data-scope")] = sc[m].value;
+  raw.terms = $("sTerms").value;
+  state.settings = sanitizeSettings(raw);
+  save(); renderSettings(); fillBuilderKeep(); recalc(true);
+  setMsg("setMsg", "Settings saved.", true);
+}
+function fillBuilderKeep(){
+  /* rebuild checklists after a settings change, preserving current selections where possible */
+  var s = state.settings;
+  var svcSel = {}, condSel = [], addonSel = {};
+  var svcs = document.querySelectorAll("[data-svc]");
+  for(var i=0;i<svcs.length;i++) if(svcs[i].checked) svcSel[svcs[i].getAttribute("data-svc")] = true;
+  var cbs = document.querySelectorAll("[data-cond]");
+  for(var j=0;j<cbs.length;j++) if(cbs[j].checked) condSel.push(cbs[j].getAttribute("data-cond"));
+  var acbs = document.querySelectorAll("[data-addon]");
+  for(var k=0;k<acbs.length;k++) if(acbs[k].checked){ var qe = document.querySelector('[data-qty="'+acbs[k].getAttribute("data-addon")+'"]'); addonSel[acbs[k].getAttribute("data-addon")] = qe ? Math.max(1, Math.floor(amt(qe.value))||1) : 1; }
+  buildChecklist("svcList", s.services, "svc", svcSel);
+  buildChecklist("condList", s.conditions, "cond", condSel);
+  buildChecklist("addonList", s.addons, "addon", addonSel);
+}
+
+/* ---------- backup ---------- */
+function exportBackup(){
+  var payload = { app:"detailbid", version:1, settings:state.settings, quotes:state.quotes, meta:state.meta };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "detailbid-backup.json";
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 400);
+}
+function importFromText(text){
+  var msg = $("importMsg");
+  var parsed;
+  try{ parsed = JSON.parse(text); }catch(e){ msg.innerHTML = '<span class="bad">That is not valid JSON — import cancelled, nothing changed.</span>'; return; }
+  if(!parsed || parsed.app !== "detailbid"){ msg.innerHTML = '<span class="bad">That file is not a DetailBid backup — import cancelled, nothing changed.</span>'; return; }
+  var st = sanitizeState(parsed);
+  if(!st){ msg.innerHTML = '<span class="bad">Backup could not be read — import cancelled, nothing changed.</span>'; return; }
+  state = st;
+  if(!state.quotes.length && !state.meta.demoCleared && !state.meta.seeded){ state = seedDemo(); }
+  save(); renderAll();
+  msg.innerHTML = '<span class="good">Backup imported.</span>';
+}
+
+/* ---------- render all / init ---------- */
+function renderAll(){
+  renderSettings();
+  fillBuilder();
+  resetQuote();
+  renderBook();
+  renderFollow();
+}
+function init(){
+  load();
+  $("qDate").value = todayStr();
+  fillBuilder();
+  renderBook(); renderFollow(); renderSettings();
+  recalc(false);
+  $("tabBar").addEventListener("click", function(e){ var b = e.target.closest("button[data-view]"); if(b) showView(b.getAttribute("data-view")); });
+  document.addEventListener("change", function(e){
+    if(e.target.id==="floorOverride"){ floorOverrideChecked = e.target.checked; return; }
+    if(["qClass","qMode","qMobile"].indexOf(e.target.id)>=0 || e.target.hasAttribute("data-svc") || e.target.hasAttribute("data-cond") || e.target.hasAttribute("data-addon")) recalc(true);
+  });
+  document.addEventListener("input", function(e){
+    if(["qMiles","qFinal"].indexOf(e.target.id)>=0 || e.target.hasAttribute("data-qty")) recalc(true);
+  });
+  $("pkgBtns").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-pkg]"); if(!b) return;
+    curPkg = b.getAttribute("data-pkg");
+    var btns = $("pkgBtns").querySelectorAll("button");
+    for(var i=0;i<btns.length;i++) btns[i].className = "btn"+(btns[i].getAttribute("data-pkg")===curPkg?"":" ghost");
+    recalc(true);
+  });
+  $("btnSaveQuote").addEventListener("click", saveQuote);
+  $("btnNewQuote").addEventListener("click", resetQuote);
+  document.addEventListener("click", function(e){
+    var ed = e.target.closest("[data-edit]"), pr = e.target.closest("[data-print]"), del = e.target.closest("[data-del]");
+    if(ed){ for(var i=0;i<state.quotes.length;i++) if(state.quotes[i].id===ed.getAttribute("data-edit")) loadEdit(state.quotes[i]); }
+    if(pr){ for(var j=0;j<state.quotes.length;j++) if(state.quotes[j].id===pr.getAttribute("data-print")) buildPrint(state.quotes[j]); }
+    if(del){
+      var dq = null; for(var k=0;k<state.quotes.length;k++) if(state.quotes[k].id===del.getAttribute("data-del")) dq = state.quotes[k];
+      if(!confirm("Delete the quote for \""+(dq?dq.client:del.getAttribute("data-del"))+"\""+(dq?(" ("+dq.vehicle+")"):"")+"? This cannot be undone.")) return;
+      state.quotes = state.quotes.filter(function(q){ return q.id!==del.getAttribute("data-del"); });
+      save(); renderBook(); renderFollow();
+    }
+  });
+  $("btnSaveSettings").addEventListener("click", saveSettings);
+  $("btnExport").addEventListener("click", exportBackup);
+  $("btnImportText").addEventListener("click", function(){ importFromText($("importText").value); });
+  $("importFile").addEventListener("change", function(){
+    var f = this.files && this.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){ importFromText(String(r.result||"")); };
+    r.readAsText(f);
+    this.value = "";
+  });
+  $("btnClearDemo").addEventListener("click", function(){
+    state.quotes = state.quotes.filter(function(q){ return !q.demo; });
+    if(state.settings.bizName.indexOf("(Demo)")>=0) state.settings.bizName = "";
+    if(state.settings.ownerName==="Demo Detailer") state.settings.ownerName = "";
+    state.meta.demoCleared = true;
+    save(); renderAll();
+    setMsg("dataMsg", "Sample data cleared.", true);
+  });
+  $("btnEraseAll").addEventListener("click", function(){
+    if(!confirm("Erase EVERYTHING — all quotes and settings? This cannot be undone.")) return;
+    state = blankState(); state.meta.demoCleared = true;
+    save(); renderAll();
+    setMsg("dataMsg", "Everything erased. The app is empty.", true);
+  });
+}
+init();
+
+/* ================= Legal — Terms of Use acceptance (catalog pattern v1.0) ================= */
+var TERMS_VERSION = "1.0";
+var LEGAL_APP_NAME = "DetailBid";
+var LEGAL_HAS_DISCLAIMER = true;
+var LEGAL_TERMS_HTML = "<h3>Terms of Use \u2014 White Wolf Digital Apps</h3><p><b>Version 1.0 (DRAFT \u2014 pending attorney review)</b></p><p><b>Seller: White Wolf Tree Service LLC, selling digital products under the name \"White Wolf Digital\"</b></p><p><b>Contact: whitewolfoklahoma@gmail.com</b></p><h4>1. What you're buying</h4><p>Our apps (including ForgeFit AI, ForgeKitchen, TreeBid Pro, SnowBid,</p><p>WashPrice Pro, RoofSquares, JobProfit Tracker, PastureLedger, and the other</p><p>titles sold under White Wolf Digital) are single-file software tools. When</p><p>you buy one, you are buying a <b>license to use the file</b>, not ownership of</p><p>the software itself.</p><h4>2. Your license</h4><ul><li>You may use the app for your own personal or business work.</li><li>You may open it on your own devices (phone, tablet, computer) and move your</li></ul><p>  own data between them using the app's built-in backup/export tools.</p><ul><li>You may <b>not</b> resell, redistribute, give away, upload, or share the app</li></ul><p>  file (or a copy of it) with anyone else \u2014 including posting it online,</p><p>  bundling it with other products, or selling access to it.</p><ul><li>You may <b>not</b> claim the app as your own work, remove its branding or</li></ul><p>  notices, or use it to build a competing product for resale.</p><ul><li>One purchase = one buyer. A business purchase covers the buyer and their</li></ul><p>  own employees using it for that business's work; it does not cover other</p><p>  businesses.</p><h4>3. Your data stays yours \u2014 and stays on your device</h4><ul><li>The current versions of our apps run <b>entirely on your device</b>. They have</li></ul><p>  no accounts, no sign-in, no analytics, and they collect, transmit, and store</p><p>  <b>none</b> of your information on any server. We never see your data.</p><ul><li>Your records are stored in your browser/app storage on your device. **You</li></ul><p>  are responsible for backing them up** using the app's export tools. If you</p><p>  clear your browser data, lose your device, or uninstall the app, your</p><p>  records may be permanently lost, and we cannot recover them \u2014 we never had</p><p>  a copy.</p><ul><li>Files you export (backups, quotes, PDFs) are under your control. Where you</li></ul><p>  store or send them is up to you.</p><h4>4. Estimates are tools, not guarantees</h4><p>Every number our apps produce \u2014 bids, prices, costs, calorie targets,</p><p>projections, schedules, totals \u2014 is an **estimate generated from the</p><p>information you enter and the settings you choose**. Outputs are aids for</p><p>your own judgment, not guarantees of price, profit, outcome, or result. You</p><p>are responsible for checking any output before relying on it (see also the</p><p>disclaimer that applies to your app: Health Disclaimer for fitness/nutrition</p><p>apps, Estimator Disclaimer for contractor tools). If an input is wrong, the</p><p>output will be wrong.</p><h4>5. Acceptable use</h4><p>Don't use the apps to break the law, infringe anyone's rights, or</p><p>misrepresent quotes, invoices, or records to your own customers. For the</p><p>fitness apps, the guardrails in the app (healthy-rate limits, calorie floor)</p><p>are part of the product \u2014 don't treat the app as a way around them.</p><h4>6. Provided \"as is\"</h4><p>The apps are provided **\"as is\" and \"as available,\" without warranties of</p><p>any kind**, express or implied \u2014 including merchantability, fitness for a</p><p>particular purpose, accuracy of calculations, and uninterrupted or</p><p>error-free operation \u2014 to the maximum extent allowed by law. Software has</p><p>bugs; browsers change; we work to fix problems but do not promise any app is</p><p>error-free or will work on every device or browser forever.</p><h4>7. Limitation of liability</h4><p>To the maximum extent allowed by law:</p><ul><li>We are **not liable for indirect, incidental, special, or consequential</li></ul><p>  damages** \u2014 including lost profits, lost or mispriced jobs, lost data, or</p><p>  business interruption \u2014 arising from use of the apps.</p><ul><li>Our total liability for any claim connected to an app is limited to the</li></ul><p>  <b>amount you paid for that app</b>.</p><ul><li>Nothing in these terms limits liability that cannot legally be limited.</li></ul><h4>8. Refunds</h4><p>Refunds are handled **by the storefront you bought from, under that</p><p>storefront's policy** \u2014 Gumroad's refund policy for Gumroad purchases, and</p><p>Google Play's refund policy for Play purchases. These terms do not add to,</p><p>replace, or override the storefront's refund rules. If a file is defective</p><p>and won't open, contact us at whitewolfoklahoma@gmail.com and we'll fix or</p><p>replace the file.</p><h4>9. Updates and changes to these terms</h4><ul><li>We may release updated versions of an app. Updates may add, change, or</li></ul><p>  remove features.</p><ul><li>We may update these terms. The version you agreed to is recorded in the</li></ul><p>  app (version number and date) at first-run acceptance. If terms change,</p><p>  the app may ask you to accept the new version once on next open. Updated</p><p>  terms apply going forward, not retroactively.</p><ul><li>If you don't agree to an updated version of the terms, stop using the app.</li></ul><h4>10. Governing law</h4><p>These terms are governed by the laws of the <b>State of Oklahoma</b>, USA.</p><p>(Attorney to confirm governing law and venue before publication.)</p><h4>11. Contact</h4><p>White Wolf Tree Service LLC (White Wolf Digital) \u2014</p><p>whitewolfoklahoma@gmail.com.</p><h4>CONNECTED FEATURES \u2014 takes effect only when these features ship</h4><p>*The sections below apply only to future connected features (device sync via</p><p>Health Connect, AI voice logging, and the AI Goal Preview in ForgeFit). They</p><p>do not apply to the current offline versions, which never transmit data.*</p><ul><li><b>Opt-in only.</b> Connected features are off by default. Each one asks for</li></ul><p>  your separate, explicit consent \u2014 on its own consent screen, in plain</p><p>  language \u2014 before anything leaves your device. Declining never disables</p><p>  the app's offline features.</p><ul><li><b>What gets sent.</b> Only what the consent screen names, only when you use</li></ul><p>  the feature: for example, a meal description (text, or audio only if cloud</p><p>  transcription is on) for AI voice logging, or the single photo you choose</p><p>  for an AI Goal Preview.</p><ul><li><b>No retention by us.</b> Our relay service passes your request to the named</li></ul><p>  AI provider and keeps nothing \u2014 no copies of your photos, audio,</p><p>  transcripts, or entries are stored on our servers. Provider handling is</p><p>  described on the consent screen and in the Privacy Policy.</p><ul><li><b>Health data stays on the device.</b> Device sync (Health Connect) reads</li></ul><p>  your health data on your phone and stores it in the app on your phone. It</p><p>  is not uploaded to us.</p><ul><li><b>Allowances.</b> Some connected features run on third-party AI services we</li></ul><p>  pay for per use, so they may include a monthly allowance described in the</p><p>  app (for example, a set number of AI previews or voice entries per month),</p><p>  with optional additional credits. Allowances and pricing will be shown in</p><p>  the app before you use the feature; they are not a subscription unless the</p><p>  app says so in plain words.</p><ul><li><b>Permissions.</b> Connected features may request device permissions (such</li></ul><p>  as Health Connect access or the microphone) at the moment you first use</p><p>  them. You can revoke permissions any time in your device settings; the</p><p>  related feature will simply stop working.</p>";
+var LEGAL_DISCLAIMER_HTML = "<h3>Estimator Disclaimer \u2014 Contractor &amp; Trade Tools</h3><p>**Applies to: TreeBid Pro, SnowBid, WashPrice Pro, RoofSquares, JobProfit</p><p>Tracker, FieldForms Toolkit, PaintPro, FenceDeck, MarketMaker, and the other</p><p>estimating/pricing tools sold under White Wolf Digital \u2014 including bundles</p><p>that contain them.**</p><h4>Estimating aids, not finished quotes</h4><ul><li>These apps are <b>estimating and record-keeping aids</b>. Every bid, price,</li></ul><p>  cost, measurement, and total they produce is an **estimate based on the</p><p>  information and rates you enter**.</p><ul><li>**You \u2014 the business owner \u2014 are responsible for verifying everything</li></ul><p>  before you quote a customer:** measurements and quantities, site</p><p>  conditions, your current material and labor costs, your rates and margins,</p><p>  taxes, permit and license requirements, disposal rules, and any contract</p><p>  terms.</p><ul><li>Default rates, presets, and sample data included in the apps are starting</li></ul><p>  points only. They are not market prices, not industry standards, and not</p><p>  a recommendation of what you should charge.</p><ul><li>A saved quote keeps the prices in effect when you created it (price</li></ul><p>  snapshot). Changing your presets later does not change saved quotes \u2014</p><p>  and a saved quote is still your responsibility to review before sending.</p><h4>Specific tools</h4><ul><li><b>TreeBid Pro:</b> tree work is dangerous and site-specific. Difficulty</li></ul><p>  factors and presets cannot see the actual tree, lean, rot, targets, or</p><p>  access. Inspect every job in person before final pricing. The \"Invoice</p><p>  with Wave\" feature is an open-and-paste handoff \u2014 TreeBid does not</p><p>  connect to Wave, and the invoice you send from Wave is yours.</p><ul><li><b>RoofSquares / measurement tools:</b> confirm roof measurements and pitch</li></ul><p>  in person or by your usual method before ordering materials.</p><ul><li><b>SnowBid / seasonal tools:</b> route times, snowfall amounts, and service</li></ul><p>  pricing vary by storm and site; seasonal contracts are your agreement</p><p>  with your customer, on your terms.</p><ul><li><b>JobProfit Tracker:</b> profit figures depend on the costs you enter.</li></ul><p>  The app is not accounting or tax software and does not replace your</p><p>  bookkeeper or accountant.</p><h4>Bottom line</h4><p>If an output and your judgment disagree, trust your judgment \u2014 then fix the</p><p>input. We are not responsible for jobs won, lost, or mispriced based on app</p><p>outputs, within the limits of the Terms of Use.</p>";
+(function(){
+  var lst = document.createElement("style");
+  lst.textContent = "@media print{ #legalOverlay{ display:none !important; } }";
+  document.head.appendChild(lst);
+})();
+function sanitizeLegal(v){
+  if(!v || typeof v !== "object") return null;
+  if(typeof v.termsVersion !== "string" || typeof v.acceptedDate !== "string") return null;
+  return { termsVersion: v.termsVersion.slice(0, 10), acceptedDate: v.acceptedDate.slice(0, 40), disclaimerShown: !!v.disclaimerShown };
+}
+function legalRecord(){
+  try{ var s = state; return (s && s.legal) ? sanitizeLegal(s.legal) : null; }catch(e){ return null; }
+}
+function legalVersionCmp(a, b){
+  var pa = String(a).split("."), pb = String(b).split(".");
+  for(var i = 0; i < 3; i++){ var d = (parseInt(pa[i], 10) || 0) - (parseInt(pb[i], 10) || 0); if(d) return d; }
+  return 0;
+}
+function legalAcceptLine(){
+  var rec = legalRecord();
+  if(rec && rec.acceptedDate) return "You agreed to Terms v" + rec.termsVersion + " on " + rec.acceptedDate.slice(0, 10) + ".";
+  return "No Terms acceptance is recorded on this device yet \u2014 the current Terms will be shown for your agreement.";
+}
+function legalSectionHTML(){
+  var h = '<div style="border-top:2px solid rgba(127,127,127,.35);margin-top:20px;padding-top:14px;">'
+    + '<h2>Legal</h2>'
+    + '<p>' + legalAcceptLine() + '</p>'
+    + '<h3>Terms of Use (v' + TERMS_VERSION + ')</h3>'
+    + '<div style="max-height:340px;overflow-y:auto;border:1px solid rgba(127,127,127,.4);border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.55;">' + LEGAL_TERMS_HTML + '</div>';
+  if(LEGAL_HAS_DISCLAIMER){
+    h += '<h3>Estimator Disclaimer</h3>'
+      + '<div style="max-height:260px;overflow-y:auto;border:1px solid rgba(127,127,127,.4);border-radius:8px;padding:10px 14px;font-size:14px;line-height:1.55;">' + LEGAL_DISCLAIMER_HTML + '</div>';
+  }
+  h += '<h3>Privacy</h3>'
+    + '<p>This app collects no data. It has no accounts, no sign-in, no analytics, and no server \u2014 everything you enter is stored only on this device, in this browser\u2019s storage, and nothing is transmitted anywhere. Files you export (backups, quotes, prints) are under your control. You are responsible for backing up your records with the app\u2019s export tools.</p>'
+    + '<p>Sold by White Wolf Tree Service LLC (White Wolf Digital) \u2014 whitewolfoklahoma@gmail.com</p>'
+    + '</div>';
+  return h;
+}
+function legalFillSection(){
+  var el = document.getElementById("legalSection");
+  if(!el) return;
+  var sig = legalAcceptLine();
+  if(el.getAttribute("data-legal-filled") === sig) return;
+  el.innerHTML = legalSectionHTML(); el.setAttribute("data-legal-filled", sig);
+}
+function legalRefreshSection(){
+  var el = document.getElementById("legalSection");
+  if(el){ el.innerHTML = legalSectionHTML(); el.setAttribute("data-legal-filled", legalAcceptLine()); }
+}
+function legalShowOverlay(isUpdate){
+  if(document.getElementById("legalOverlay")) return;
+  var ov = document.createElement("div");
+  ov.id = "legalOverlay";
+  ov.setAttribute("style", "position:fixed;inset:0;z-index:99999;background:rgba(8,10,14,.74);overflow-y:auto;padding:20px 12px;display:flex;align-items:flex-start;justify-content:center;");
+  var discBtn = LEGAL_HAS_DISCLAIMER ? '<button type="button" id="legalReadDisc" style="min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid #9aa4b2;background:#ffffff;color:#1c2733;font-size:15px;cursor:pointer;">Read the Estimator Disclaimer</button>' : '';
+  var checkLabel = LEGAL_HAS_DISCLAIMER ? "I have read the disclaimer and I agree to the Terms of Use" : "I have read and I agree to the Terms of Use";
+  ov.innerHTML = '<div style="background:#ffffff;color:#1c2733;max-width:560px;width:100%;border-radius:14px;padding:22px 20px;box-shadow:0 18px 50px rgba(0,0,0,.45);font-size:15px;line-height:1.55;">'
+    + '<h2 style="margin:0 0 6px;font-size:21px;">' + LEGAL_APP_NAME + ' \u2014 Terms of Use</h2>'
+    + (isUpdate ? '<p style="background:#fdf3d7;border:1px solid #e4cf8a;border-radius:8px;padding:8px 10px;"><b>Our terms were updated (v' + TERMS_VERSION + ').</b></p>' : '')
+    + '<p style="font-size:16px;"><b>Your data stays on your device.</b><br><b>Estimates are aids, not guarantees.</b><br><b>You\'re responsible for checking outputs before you rely on them.</b></p>'
+    + '<p>The full Terms' + (LEGAL_HAS_DISCLAIMER ? ' and Disclaimer are' : ' are') + ' one tap away, now and any time in Settings \u2192 Legal.</p>'
+    + '<div id="legalReader" style="display:none;max-height:44vh;overflow-y:auto;border:1px solid #d5dbe3;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:14px;"></div>'
+    + '<p style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" id="legalReadTerms" style="min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid #9aa4b2;background:#ffffff;color:#1c2733;font-size:15px;cursor:pointer;">Read the full Terms</button>' + discBtn + '</p>'
+    + '<label style="display:flex;gap:10px;align-items:flex-start;margin:12px 0;cursor:pointer;"><input type="checkbox" id="legalCheck" style="width:22px;height:22px;min-width:22px;margin-top:1px;cursor:pointer;"><span>' + checkLabel + '</span></label>'
+    + '<button type="button" id="legalAgree" disabled style="min-height:52px;width:100%;border:0;border-radius:10px;background:#1f5fa8;color:#ffffff;font-size:17px;font-weight:700;cursor:pointer;opacity:.55;">I Agree</button>'
+    + '<p style="font-size:13px;color:#5a6675;margin-bottom:0;">Your records stay loaded behind this screen and are never deleted or locked, whether or not you agree now.</p>'
+    + '</div>';
+  document.body.appendChild(ov);
+  var reader = ov.querySelector("#legalReader");
+  var showing = "";
+  function toggleReader(kind){
+    if(showing === kind){ reader.style.display = "none"; showing = ""; return; }
+    reader.innerHTML = kind === "terms" ? LEGAL_TERMS_HTML : LEGAL_DISCLAIMER_HTML;
+    reader.style.display = "block"; showing = kind;
+    reader.scrollTop = 0;
+  }
+  ov.querySelector("#legalReadTerms").addEventListener("click", function(){ toggleReader("terms"); });
+  var db = ov.querySelector("#legalReadDisc");
+  if(db) db.addEventListener("click", function(){ toggleReader("disc"); });
+  var legalChk = ov.querySelector("#legalCheck");
+  var legalAgreeBtn = ov.querySelector("#legalAgree");
+  legalChk.addEventListener("change", function(){ legalAgreeBtn.disabled = !legalChk.checked; legalAgreeBtn.style.opacity = legalChk.checked ? "1" : ".55"; });
+  legalAgreeBtn.addEventListener("click", function(){
+    if(!legalChk.checked) return;
+    try{ state.legal = { termsVersion: TERMS_VERSION, acceptedDate: new Date().toISOString(), disclaimerShown: LEGAL_HAS_DISCLAIMER }; save(); }catch(e){}
+    if(ov.parentNode) ov.parentNode.removeChild(ov);
+    legalRefreshSection();
+  });
+}
+function legalInit(){
+  legalFillSection();
+  var rec = legalRecord();
+  if(rec && legalVersionCmp(rec.termsVersion, TERMS_VERSION) >= 0) return;
+  legalShowOverlay(!!rec);
+}
+if(typeof MutationObserver !== "undefined"){
+  var legalObs = new MutationObserver(function(){ legalFillSection(); });
+  legalObs.observe(document.documentElement, { childList: true, subtree: true });
+}
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(legalInit, 30); });
+else setTimeout(legalInit, 30);
+
+</script>
+</body>
+</html>
